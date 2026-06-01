@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HT Predictor v2.0 - Analisi Didattica</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { max-width: 900px; margin: 0 auto; }
+        header {
+            text-align: center;
+            padding: 30px 0;
+            border-bottom: 2px solid #e94560;
+            margin-bottom: 30px;
+        }
+        h1 {
+            font-size: 2.2rem;
+            color: #e94560;
+            text-shadow: 0 0 20px rgba(233, 69, 96, 0.3);
+        }
+        .subtitle {
+            font-size: 1rem;
+            color: #a0a0a0;
+            margin-top: 10px;
+        }
+        .badge {
+            display: inline-block;
+            background: #e94560;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        .disclaimer {
+            background: rgba(255, 193, 7, 0.1);
+            border: 1px solid #ffc107;
+            border-radius: 12px;
+            padding: 15px 20px;
+            margin-bottom: 25px;
+            font-size: 0.85rem;
+            color: #ffc107;
+        }
+        .disclaimer strong { display: block; margin-bottom: 5px; }
+        .match-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+        }
+        .match-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        .match-card.high { border-left: 4px solid #e94560; }
+        .match-card.medium { border-left: 4px solid #ffc107; }
+        .match-card.low { border-left: 4px solid #28a745; }
+        .match-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .match-title { font-size: 1.1rem; font-weight: 600; }
+        .match-time { font-size: 0.85rem; color: #a0a0a0; }
+        .probability-bar {
+            width: 100%;
+            height: 30px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+            margin-bottom: 15px;
+        }
+        .probability-fill {
+            height: 100%;
+            border-radius: 15px;
+            transition: width 0.8s ease;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 10px;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+        .probability-fill.high { background: linear-gradient(90deg, #e94560, #ff6b6b); }
+        .probability-fill.medium { background: linear-gradient(90deg, #ffc107, #ffdb58); color: #333; }
+        .probability-fill.low { background: linear-gradient(90deg, #28a745, #5cb85c); }
+        .match-details {
+            display: none;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .match-details.active { display: block; }
+        .factor-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .factor-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+        }
+        .factor-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+        }
+        .factor-value { font-weight: 600; font-size: 0.9rem; }
+        .factor-value.positive { color: #28a745; }
+        .factor-value.negative { color: #e94560; }
+        .factor-value.neutral { color: #a0a0a0; }
+        .recommendation {
+            display: inline-block;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        .rec-high { background: rgba(233, 69, 96, 0.2); color: #e94560; }
+        .rec-medium { background: rgba(255, 193, 7, 0.2); color: #ffc107; }
+        .rec-low { background: rgba(40, 167, 69, 0.2); color: #28a745; }
+        .toggle-btn {
+            background: none;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #e0e0e0;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+        .toggle-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: #e94560;
+        }
+        .model-info {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 16px;
+            padding: 25px;
+            margin-top: 30px;
+        }
+        .model-info h2 {
+            color: #e94560;
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+        }
+        .model-info p {
+            font-size: 0.9rem;
+            line-height: 1.6;
+            color: #b0b0b0;
+            margin-bottom: 10px;
+        }
+        .model-info ul { list-style: none; padding-left: 0; }
+        .model-info li {
+            padding: 8px 0;
+            padding-left: 25px;
+            position: relative;
+            font-size: 0.9rem;
+            color: #b0b0b0;
+        }
+        .model-info li::before {
+            content: "▸";
+            position: absolute;
+            left: 0;
+            color: #e94560;
+        }
+        footer {
+            text-align: center;
+            padding: 30px 0;
+            color: #666;
+            font-size: 0.8rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            margin-top: 30px;
+        }
+        @media (max-width: 600px) {
+            h1 { font-size: 1.6rem; }
+            .match-title { font-size: 0.95rem; }
+            .match-header { flex-direction: column; align-items: flex-start; gap: 8px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>⚽ HT Predictor v2.0</h1>
+            <p class="subtitle">Analisi Didattica della Probabilità di Gol nel Primo Tempo</p>
+            <span class="badge">SCOPO EDUCATIVO</span>
+        </header>
+        
+        <div class="disclaimer">
+            <strong>⚠️ DISCLAIMER DIDATTICO</strong>
+            Questo strumento è a scopo ESCLUSIVAMENTE EDUCATIVO. Le probabilità sono stime 
+            basate su modelli statistici e NON rappresentano certezze. Il calcio è 
+            imprevedibile per definizione. Non utilizzare per scopi di scommessa.
+        </div>
+        
+        <div id="matches-container"></div>
+        
+        <div class="model-info">
+            <h2>🧠 Come funziona il Modello V2.0</h2>
+            <p>Il modello calcola la probabilità di <strong>Over 0.5 gol nel primo tempo</strong> combinando:</p>
+            <ul>
+                <li><strong>Probabilità Base:</strong> Statistiche storiche HT delle squadre</li>
+                <li><strong>Fattore Motivazione:</strong> Finale, derby, salvezza, titolo</li>
+                <li><strong>Fattore Classifica:</strong> Differenza posizioni in classifica</li>
+                <li><strong>Fattore Stile:</strong> Offensivo vs difensivo</li>
+                <li><strong>Fattore Disciplina (NEW):</strong> Espulsioni precedenti</li>
+                <li><strong>Fattore xG (NEW):</strong> Expected Goals nel primo tempo</li>
+                <li><strong>Fattore Pressione (NEW):</strong> Tackle, intercetti, duelli</li>
+                <li><strong>Fattore Trasferta (NEW):</strong> Pattern favorita in trasferta</li>
+            </ul>
+            <p style="margin-top: 15px;">
+                <strong>Formula:</strong> P(Over 0.5 HT) = Base + Σ(Aggiustamenti), 
+                limitata tra 35% e 85% per evitare overfitting.
+            </p>
+        </div>
+        
+        <footer>
+            <p>HT Predictor v2.0 - Progetto Didattico | Dati: ESPN, SofaScore, FBref</p>
+            <p>Creato per scopi educativi - 2026</p>
+        </footer>
+    </div>
+    
+    <script>
+        const matches = [
+            {
+                id: 1,
+                home: "Turchia",
+                away: "Macedonia del Nord",
+                league: "Amichevole Internazionale",
+                time: "19:30",
+                flag: "🌍",
+                homeHT: 0.72,
+                awayHT: 0.58,
+                xG_home: 1.40,
+                xG_away: 0.70,
+                cards_home: 0,
+                cards_away: 0,
+                pressing_home: 16.0,
+                pressing_away: 13.5,
+                position_home: null,
+                position_away: null,
+                motivation: "high",
+                style_home: "offensivo",
+                style_away: "difensivo",
+                favorite_away: false,
+                h2h: "Turchia favorita nettamente"
+            },
+            {
+                id: 2,
+                home: "Flamengo",
+                away: "Coritiba",
+                league: "Brasileirao Serie A",
+                time: "21:00 (03:00 IT)",
+                flag: "🇧🇷",
+                homeHT: 0.82,
+                awayHT: 0.76,
+                xG_home: 1.35,
+                xG_away: 1.05,
+                cards_home: 3,
+                cards_away: 2,
+                pressing_home: 17.8,
+                pressing_away: 16.5,
+                position_home: 2,
+                position_away: 7,
+                motivation: "high",
+                style_home: "offensivo",
+                style_away: "equilibrato",
+                favorite_away: false,
+                h2h: "Flamengo domina storico"
+            },
+            {
+                id: 3,
+                home: "Bahia",
+                away: "Botafogo",
+                league: "Brasileirao Serie A",
+                time: "22:30 (04:30 IT)",
+                flag: "🇧🇷",
+                homeHT: 0.88,
+                awayHT: 0.75,
+                xG_home: 1.20,
+                xG_away: 1.25,
+                cards_home: 1,
+                cards_away: 4,
+                pressing_home: 16.2,
+                pressing_away: 15.8,
+                position_home: 6,
+                position_away: 12,
+                motivation: "medium",
+                style_home: "offensivo",
+                style_away: "offensivo",
+                favorite_away: false,
+                h2h: "Bahia leggermente favorita"
+            },
+            {
+                id: 4,
+                home: "Athletico Paranaense",
+                away: "Mirassol",
+                league: "Brasileirao Serie A",
+                time: "21:00 (03:00 IT)",
+                flag: "🇧🇷",
+                homeHT: 0.83,
+                awayHT: 0.65,
+                xG_home: 1.15,
+                xG_away: 0.85,
+                cards_home: 2,
+                cards_away: 3,
+                pressing_home: 18.5,
+                pressing_away: 14.2,
+                position_home: 4,
+                position_away: 19,
+                motivation: "high",
+                style_home: "offensivo",
+                style_away: "difensivo",
+                favorite_away: false,
+                h2h: "Athletico favorito, Mirassol neopromossa"
+            },
+            {
+                id: 5,
+                home: "Grêmio",
+                away: "Corinthians",
+                league: "Brasileirao Serie A",
+                time: "22:30 (04:30 IT)",
+                flag: "🇧🇷",
+                homeHT: 0.72,
+                awayHT: 0.78,
+                xG_home: 0.95,
+                xG_away: 0.90,
+                cards_home: 2,
+                cards_away: 3,
+                pressing_home: 15.5,
+                pressing_away: 17.2,
+                position_home: 16,
+                position_away: 10,
+                motivation: "medium",
+                style_home: "equilibrato",
+                style_away: "equilibrato",
+                favorite_away: true,
+                h2h: "Equilibrato (ultimi 5: 2W-1D-2L)"
+            }
+        ];
+        
+        function calculateProbability(match) {
+            let prob = (match.homeHT + match.awayHT) / 2;
+            let adjustments = [];
+            
+            if (match.motivation === "high") {
+                prob += 0.05;
+                adjustments.push({ name: "Motivazione alta", value: "+5%", type: "pos" });
+            }
+            
+            if (match.position_home && match.position_away) {
+                const diff = Math.abs(match.position_home - match.position_away);
+                if (diff > 10) {
+                    prob += 0.03;
+                    adjustments.push({ name: `Differenza classifica (${diff})`, value: "+3%", type: "pos" });
+                }
+            }
+            
+            if (match.style_home === "offensivo" && match.style_away === "offensivo") {
+                prob += 0.08;
+                adjustments.push({ name: "Entrambe offensive", value: "+8%", type: "pos" });
+            } else if (match.style_home === "difensivo" && match.style_away === "difensivo") {
+                prob -= 0.10;
+                adjustments.push({ name: "Entrambe difensive", value: "-10%", type: "neg" });
+            }
+            
+            const avgCards = (match.cards_home + match.cards_away) / 2;
+            if (avgCards > 2.5) {
+                prob -= 0.03;
+                adjustments.push({ name: "Disciplina scarsa", value: "-3%", type: "neg" });
+            } else if (avgCards < 1.0) {
+                prob += 0.02;
+                adjustments.push({ name: "Disciplina eccellente", value: "+2%", type: "pos" });
+            }
+            
+            const avgXG = (match.xG_home + match.xG_away) / 2;
+            if (avgXG > 1.2) {
+                prob += 0.04;
+                adjustments.push({ name: "xG HT alto", value: "+4%", type: "pos" });
+            } else if (avgXG < 0.8) {
+                prob -= 0.04;
+                adjustments.push({ name: "xG HT basso", value: "-4%", type: "neg" });
+            }
+            
+            if (match.pressing_home > 17 && match.style_away === "difensivo") {
+                prob -= 0.03;
+                adjustments.push({ name: "Pressing vs difesa", value: "-3%", type: "neg" });
+            }
+            
+            if (match.favorite_away && match.awayHT < 0.40) {
+                prob -= 0.05;
+                adjustments.push({ name: "Favorita in trasferta", value: "-5%", type: "neg" });
+            }
+            
+            prob = Math.max(0.35, Math.min(0.85, prob));
+            return { prob, adjustments };
+        }
+        
+        function getCategory(prob) {
+            if (prob >= 0.75) return { class: "high", label: "ALTA", recClass: "rec-high" };
+            if (prob >= 0.60) return { class: "medium", label: "MEDIA", recClass: "rec-medium" };
+            return { class: "low", label: "BASSA", recClass: "rec-low" };
+        }
+        
+        function renderMatches() {
+            const container = document.getElementById("matches-container");
+            
+            matches.forEach(match => {
+                const { prob, adjustments } = calculateProbability(match);
+                const cat = getCategory(prob);
+                
+                const card = document.createElement("div");
+                card.className = `match-card ${cat.class}`;
+                card.innerHTML = `
+                    <div class="match-header">
+                        <div>
+                            <div class="match-title">${match.flag} ${match.home} vs ${match.away}</div>
+                            <div class="match-time">${match.league} • ${match.time}</div>
+                        </div>
+                        <button class="toggle-btn" onclick="toggleDetails(${match.id})">
+                            Dettagli ▼
+                        </button>
+                    </div>
+                    
+                    <div class="probability-bar">
+                        <div class="probability-fill ${cat.class}" style="width: ${prob * 100}%">
+                            ${(prob * 100).toFixed(1)}%
+                        </div>
+                    </div>
+                    
+                    <span class="recommendation ${cat.recClass}">
+                        Probabilità ${cat.label} di gol nel primo tempo
+                    </span>
+                    
+                    <div class="match-details" id="details-${match.id}">
+                        ${adjustments.map(adj => `
+                            <div class="factor-row">
+                                <div class="factor-label">
+                                    <span class="factor-icon" style="background: ${adj.type === 'pos' ? 'rgba(40, 167, 69, 0.2)' : adj.type === 'neg' ? 'rgba(233, 69, 96, 0.2)' : 'rgba(160, 160, 160, 0.2)'}; color: ${adj.type === 'pos' ? '#28a745' : adj.type === 'neg' ? '#e94560' : '#a0a0a0'}">
+                                        ${adj.type === 'pos' ? '+' : adj.type === 'neg' ? '−' : '•'}
+                                    </span>
+                                    ${adj.name}
+                                </div>
+                                <div class="factor-value ${adj.type === 'pos' ? 'positive' : adj.type === 'neg' ? 'negative' : 'neutral'}">
+                                    ${adj.value}
+                                </div>
+                            </div>
+                        `).join('')}
+                        <div class="factor-row" style="border-top: 2px solid rgba(255,255,255,0.1); margin-top: 10px; padding-top: 10px;">
+                            <div class="factor-label" style="font-weight: bold;">Probabilità finale</div>
+                            <div class="factor-value" style="color: #e94560; font-size: 1.1rem;">${(prob * 100).toFixed(1)}%</div>
+                        </div>
+                        <div style="margin-top: 10px; font-size: 0.8rem; color: #888;">
+                            💡 ${match.h2h}
+                        </div>
+                    </div>
+                `;
+                
+                container.appendChild(card);
+            });
+        }
+        
+        function toggleDetails(id) {
+            const details = document.getElementById(`details-${id}`);
+            details.classList.toggle("active");
+            const btn = details.previousElementSibling.previousElementSibling.querySelector('.toggle-btn');
+            btn.textContent = details.classList.contains("active") ? "Dettagli ▲" : "Dettagli ▼";
+        }
+        
+        renderMatches();
+    </script>
+</body>
+</html>
