@@ -1,0 +1,1143 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HT Predictor v3.1 - Analisi Didattica Gol Primo Tempo</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        :root {
+            --primary: #e94560;
+            --secondary: #16213e;
+            --dark: #1a1a2e;
+            --light: #e0e0e0;
+            --success: #28a745;
+            --warning: #ffc107;
+            --danger: #e94560;
+        }
+        
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, var(--dark) 0%, var(--secondary) 50%, #0f3460 100%);
+            color: var(--light);
+            min-height: 100vh;
+        }
+        
+        .container { max-width: 1000px; margin: 0 auto; padding: 20px; }
+        
+        header {
+            text-align: center;
+            padding: 30px 0;
+            border-bottom: 2px solid var(--primary);
+            margin-bottom: 30px;
+        }
+        
+        h1 {
+            font-size: 2.2rem;
+            color: var(--primary);
+            text-shadow: 0 0 20px rgba(233, 69, 96, 0.3);
+        }
+        
+        .subtitle {
+            font-size: 1rem;
+            color: #a0a0a0;
+            margin-top: 10px;
+        }
+        
+        .badge {
+            display: inline-block;
+            background: var(--primary);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        
+        .disclaimer {
+            background: rgba(255, 193, 7, 0.1);
+            border: 1px solid var(--warning);
+            border-radius: 12px;
+            padding: 15px 20px;
+            margin-bottom: 25px;
+            font-size: 0.85rem;
+            color: var(--warning);
+        }
+        
+        .disclaimer strong { display: block; margin-bottom: 5px; }
+        
+        .nav-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            overflow-x: auto;
+            padding-bottom: 10px;
+        }
+        
+        .nav-tab {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--light);
+            padding: 12px 20px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+        
+        .nav-tab:hover, .nav-tab.active {
+            background: var(--primary);
+            border-color: var(--primary);
+        }
+        
+        .section { display: none; }
+        .section.active { display: block; }
+        
+        .api-config {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 25px;
+        }
+        
+        .api-config h3 {
+            color: var(--primary);
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+        
+        .api-config p {
+            font-size: 0.85rem;
+            color: #888;
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+        
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .input-group input, .input-group select {
+            flex: 1;
+            min-width: 200px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: var(--light);
+            padding: 12px 16px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+        }
+        
+        .input-group input::placeholder { color: #888; }
+        
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .btn:hover { background: #ff6b6b; transform: translateY(-2px); }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .btn-secondary:hover { background: rgba(255, 255, 255, 0.2); }
+        
+        .match-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .match-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        .match-card.high { border-left: 4px solid var(--danger); }
+        .match-card.medium { border-left: 4px solid var(--warning); }
+        .match-card.low { border-left: 4px solid var(--success); }
+        
+        .match-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .match-title { font-size: 1.1rem; font-weight: 600; }
+        .match-time { font-size: 0.85rem; color: #a0a0a0; }
+        
+        .probability-bar {
+            width: 100%;
+            height: 30px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+            margin-bottom: 15px;
+        }
+        
+        .probability-fill {
+            height: 100%;
+            border-radius: 15px;
+            transition: width 0.8s ease;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 10px;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+        
+        .probability-fill.high { background: linear-gradient(90deg, var(--danger), #ff6b6b); }
+        .probability-fill.medium { background: linear-gradient(90deg, var(--warning), #ffdb58); color: #333; }
+        .probability-fill.low { background: linear-gradient(90deg, var(--success), #5cb85c); }
+        
+        .match-details {
+            display: none;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .match-details.active { display: block; }
+        
+        .factor-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .factor-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+        }
+        
+        .factor-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+        }
+        
+        .factor-value { font-weight: 600; font-size: 0.9rem; }
+        .factor-value.positive { color: var(--success); }
+        .factor-value.negative { color: var(--danger); }
+        .factor-value.neutral { color: #a0a0a0; }
+        
+        .recommendation {
+            display: inline-block;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        
+        .rec-high { background: rgba(233, 69, 96, 0.2); color: var(--danger); }
+        .rec-medium { background: rgba(255, 193, 7, 0.2); color: var(--warning); }
+        .rec-low { background: rgba(40, 167, 69, 0.2); color: var(--success); }
+        
+        .toggle-btn {
+            background: none;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: var(--light);
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+        
+        .toggle-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--primary);
+        }
+        
+        .summary-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 20px;
+        }
+        
+        .summary-card h3 {
+            color: var(--primary);
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .stat-box {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--primary);
+        }
+        
+        .stat-label {
+            font-size: 0.85rem;
+            color: #a0a0a0;
+            margin-top: 5px;
+        }
+        
+        .archive-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        
+        .archive-table th, .archive-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .archive-table th {
+            color: var(--primary);
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        
+        .archive-table td { font-size: 0.85rem; }
+        .archive-table tr:hover { background: rgba(255, 255, 255, 0.03); }
+        
+        .status-correct { color: var(--success); font-weight: bold; }
+        .status-wrong { color: var(--danger); font-weight: bold; }
+        .status-pending { color: var(--warning); }
+        
+        .model-info {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 16px;
+            padding: 25px;
+            margin-top: 30px;
+        }
+        
+        .model-info h2 {
+            color: var(--primary);
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+        }
+        
+        .model-info p {
+            font-size: 0.9rem;
+            line-height: 1.6;
+            color: #b0b0b0;
+            margin-bottom: 10px;
+        }
+        
+        .model-info ul { list-style: none; padding-left: 0; }
+        
+        .model-info li {
+            padding: 8px 0;
+            padding-left: 25px;
+            position: relative;
+            font-size: 0.9rem;
+            color: #b0b0b0;
+        }
+        
+        .model-info li::before {
+            content: "▸";
+            position: absolute;
+            left: 0;
+            color: var(--primary);
+        }
+        
+        footer {
+            text-align: center;
+            padding: 30px 0;
+            color: #666;
+            font-size: 0.8rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            margin-top: 30px;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #a0a0a0;
+        }
+        
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        @media (max-width: 600px) {
+            h1 { font-size: 1.6rem; }
+            .match-title { font-size: 0.95rem; }
+            .match-header { flex-direction: column; align-items: flex-start; gap: 8px; }
+            .nav-tabs { gap: 5px; }
+            .nav-tab { padding: 10px 15px; font-size: 0.8rem; }
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #888;
+        }
+        
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+        
+        .date-display {
+            font-size: 1.3rem;
+            color: var(--primary);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .api-info-box {
+            background: rgba(40, 167, 69, 0.1);
+            border: 1px solid var(--success);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
+            font-size: 0.85rem;
+        }
+        
+        .api-info-box strong {
+            color: var(--success);
+            display: block;
+            margin-bottom: 8px;
+        }
+        
+        .api-info-box a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+        
+        .api-info-box a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>⚽ HT Predictor v3.1</h1>
+            <p class="subtitle">Analisi Didattica della Probabilità di Gol nel Primo Tempo</p>
+            <span class="badge">SCOPO EDUCATIVO</span>
+        </header>
+        
+        <div class="disclaimer">
+            <strong>⚠️ DISCLAIMER DIDATTICO</strong>
+            Questo strumento è a scopo ESCLUSIVAMENTE EDUCATIVO. Le probabilità sono stime 
+            basate su modelli statistici e NON rappresentano certezze. Il calcio è 
+            imprevedibile per definizione. Non utilizzare per scopi di scommessa.
+        </div>
+        
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="showSection('daily')">📅 Partite Giornaliere</button>
+            <button class="nav-tab" onclick="showSection('summary')">📊 Riepilogo</button>
+            <button class="nav-tab" onclick="showSection('archive')">🗄️ Archivio</button>
+            <button class="nav-tab" onclick="showSection('model')">🧠 Modello</button>
+        </div>
+        
+        <div id="section-daily" class="section active">
+            <div class="date-display" id="current-date"></div>
+            
+            <div class="api-config">
+                <h3>🔌 Carica Partite da API-Football</h3>
+                <p>
+                    Inserisci la tua chiave API gratuita per caricare automaticamente le partite del giorno.
+                    Se non hai una chiave, registrati gratuitamente su <a href="https://www.api-football.com/" target="_blank">api-football.com</a>.
+                </p>
+                <div class="input-group">
+                    <input type="text" id="api-key" placeholder="Inserisci chiave API-Football...">
+                    <select id="api-date">
+                        <option value="today">Oggi</option>
+                        <option value="tomorrow">Domani</option>
+                        <option value="yesterday">Ieri</option>
+                    </select>
+                    <button class="btn" onclick="loadMatchesFromAPI()">🔄 Carica Partite</button>
+                </div>
+                <div id="api-status" style="font-size: 0.85rem; color: #888; margin-top: 10px;"></div>
+                
+                <div class="api-info-box">
+                    <strong>ℹ️ Come ottenere la chiave API gratuita:</strong>
+                    1. Vai su <a href="https://www.api-football.com/" target="_blank">api-football.com</a><br>
+                    2. Registrati con email (gratuito)<br>
+                    3. Vai nella dashboard e copia la chiave API<br>
+                    4. Incollala qui sopra e clicca "Carica Partite"
+                </div>
+            </div>
+            
+            <div id="daily-matches">
+                <div class="empty-state">
+                    <div class="empty-state-icon">📅</div>
+                    <p>Nessuna partita caricata.</p>
+                    <p style="font-size: 0.85rem; margin-top: 10px;">
+                        Inserisci la tua chiave API-Football e clicca "Carica Partite"<br>
+                        per vedere le partite del giorno con analisi V3.1.
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div id="section-summary" class="section">
+            <div class="date-display" id="summary-date"></div>
+            
+            <div class="summary-card">
+                <h3>📈 Statistiche Giornaliere</h3>
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <div class="stat-number" id="stat-total">0</div>
+                        <div class="stat-label">Partite Analizzate</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-number" id="stat-high">0</div>
+                        <div class="stat-label">Probabilità Alta (>75%)</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-number" id="stat-medium">0</div>
+                        <div class="stat-label">Probabilità Media (60-75%)</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-number" id="stat-low">0</div>
+                        <div class="stat-label">Probabilità Bassa (<60%)</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-number" id="stat-avg">0%</div>
+                        <div class="stat-label">Probabilità Media</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-number" id="stat-best">-</div>
+                        <div class="stat-label">Miglior Partita</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="summary-card">
+                <h3>🎯 Top 3 Partite per Probabilità di Gol HT</h3>
+                <div id="top-matches">
+                    <p style="color: #888; text-align: center; padding: 20px;">Nessuna partita analizzata oggi.</p>
+                </div>
+            </div>
+            
+            <div class="summary-card">
+                <h3>📊 Distribuzione Probabilità</h3>
+                <div id="probability-chart" style="padding: 20px;">
+                    <p style="color: #888; text-align: center;">Carica partite per vedere la distribuzione.</p>
+                </div>
+            </div>
+        </div>
+        
+        <div id="section-archive" class="section">
+            <h2 style="color: var(--primary); margin-bottom: 20px;">🗄️ Archivio Partite</h2>
+            
+            <div class="input-group" style="margin-bottom: 20px;">
+                <input type="date" id="archive-date-filter" onchange="filterArchive()">
+                <select id="archive-league-filter" onchange="filterArchive()">
+                    <option value="">Tutti i campionati</option>
+                </select>
+                <button class="btn btn-secondary" onclick="exportArchive()">📥 Esporta CSV</button>
+            </div>
+            
+            <div style="overflow-x: auto;">
+                <table class="archive-table">
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Campionato</th>
+                            <th>Partita</th>
+                            <th>Probabilità HT</th>
+                            <th>Risultato HT</th>
+                            <th>Risultato FT</th>
+                            <th>Esito</th>
+                            <th>Azioni</th>
+                        </tr>
+                    </thead>
+                    <tbody id="archive-body">
+                        <tr>
+                            <td colspan="8" style="text-align: center; color: #888; padding: 40px;">
+                                Nessuna partita in archivio. Inizia ad aggiungere partite!
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div id="section-model" class="section">
+            <div class="model-info">
+                <h2>🧠 Come funziona il Modello V3.1</h2>
+                <p>Il modello calcola la probabilità di <strong>Over 0.5 gol nel primo tempo</strong> combinando:</p>
+                <ul>
+                    <li><strong>Probabilità Base:</strong> Statistiche storiche HT delle squadre</li>
+                    <li><strong>Fattore Motivazione:</strong> Finale, derby, salvezza, titolo</li>
+                    <li><strong>Fattore Classifica:</strong> Differenza posizioni in classifica</li>
+                    <li><strong>Fattore Stile:</strong> Offensivo vs difensivo</li>
+                    <li><strong>Fattore Disciplina:</strong> Espulsioni precedenti</li>
+                    <li><strong>Fattore xG:</strong> Expected Goals nel primo tempo</li>
+                    <li><strong>Fattore Pressione:</strong> Tackle, intercetti, duelli</li>
+                    <li><strong>Fattore Trasferta:</strong> Pattern favorita in trasferta</li>
+                </ul>
+                <p style="margin-top: 15px;">
+                    <strong>Formula:</strong> P(Over 0.5 HT) = Base + Σ(Aggiustamenti), 
+                    limitata tra 35% e 85%.
+                </p>
+            </div>
+            
+            <div class="model-info">
+                <h2>📚 Guida all'uso</h2>
+                <p><strong>1. Partite Giornaliere:</strong> Inserisci la chiave API-Football e clicca "Carica Partite" 
+                per vedere le partite del giorno con analisi completa.</p>
+                <p><strong>2. Riepilogo:</strong> Visualizza statistiche aggregate, top 3 partite e distribuzione probabilità.</p>
+                <p><strong>3. Archivio:</strong> Salva le partite analizzate, inserisci i risultati reali per calcolare 
+                l'accuracy del modello nel tempo.</p>
+                <p><strong>4. API-Football:</strong> Registrati gratuitamente su <a href="https://www.api-football.com/" target="_blank">api-football.com</a> 
+                per caricare automaticamente le partite.</p>
+            </div>
+            
+            <div class="model-info">
+                <h2>⚠️ Disclaimer</h2>
+                <p>Questo strumento è a scopo <strong>ESCLUSIVAMENTE EDUCATIVO</strong>. Non utilizzare per 
+                scopi di scommessa. Il calcio è imprevedibile e nessun modello può garantire risultati.</p>
+            </div>
+        </div>
+        
+        <footer>
+            <p>HT Predictor v3.1 - Progetto Didattico</p>
+            <p>Creato per scopi educativi - 2026</p>
+        </footer>
+    </div>
+    
+    <script>
+        let currentMatches = [];
+        let archive = JSON.parse(localStorage.getItem('ht_predictor_archive')) || [];
+        let nextId = parseInt(localStorage.getItem('ht_predictor_next_id')) || 1;
+        
+        function showSection(sectionId) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+            
+            document.getElementById('section-' + sectionId).classList.add('active');
+            event.target.classList.add('active');
+            
+            if (sectionId === 'summary') updateSummary();
+            if (sectionId === 'archive') updateArchive();
+        }
+        
+        function updateDate() {
+            const now = new Date();
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            const dateStr = now.toLocaleDateString('it-IT', options);
+            document.getElementById('current-date').textContent = dateStr;
+            document.getElementById('summary-date').textContent = dateStr;
+        }
+        
+        function calculateProbability(match) {
+            let prob = (match.homeHT + match.awayHT) / 2;
+            let adjustments = [];
+            
+            if (match.motivation === "high") {
+                prob += 0.05;
+                adjustments.push({ name: "Motivazione alta", value: "+5%", type: "pos" });
+            }
+            
+            if (match.position_home && match.position_away) {
+                const diff = Math.abs(match.position_home - match.position_away);
+                if (diff > 10) {
+                    prob += 0.03;
+                    adjustments.push({ name: `Differenza classifica (${diff})`, value: "+3%", type: "pos" });
+                }
+            }
+            
+            if (match.style_home === "offensivo" && match.style_away === "offensivo") {
+                prob += 0.08;
+                adjustments.push({ name: "Entrambe offensive", value: "+8%", type: "pos" });
+            } else if (match.style_home === "difensivo" && match.style_away === "difensivo") {
+                prob -= 0.10;
+                adjustments.push({ name: "Entrambe difensive", value: "-10%", type: "neg" });
+            }
+            
+            const avgCards = (match.cards_home + match.cards_away) / 2;
+            if (avgCards > 2.5) {
+                prob -= 0.03;
+                adjustments.push({ name: "Disciplina scarsa", value: "-3%", type: "neg" });
+            } else if (avgCards < 1.0) {
+                prob += 0.02;
+                adjustments.push({ name: "Disciplina eccellente", value: "+2%", type: "pos" });
+            }
+            
+            const avgXG = (match.xG_home + match.xG_away) / 2;
+            if (avgXG > 1.2) {
+                prob += 0.04;
+                adjustments.push({ name: "xG HT alto", value: "+4%", type: "pos" });
+            } else if (avgXG < 0.8) {
+                prob -= 0.04;
+                adjustments.push({ name: "xG HT basso", value: "-4%", type: "neg" });
+            }
+            
+            if (match.pressing_home > 17 && match.style_away === "difensivo") {
+                prob -= 0.03;
+                adjustments.push({ name: "Pressing vs difesa", value: "-3%", type: "neg" });
+            }
+            
+            if (match.favorite_away && match.awayHT < 0.40) {
+                prob -= 0.05;
+                adjustments.push({ name: "Favorita in trasferta", value: "-5%", type: "neg" });
+            }
+            
+            prob = Math.max(0.35, Math.min(0.85, prob));
+            return { prob, adjustments };
+        }
+        
+        function getCategory(prob) {
+            if (prob >= 0.75) return { class: "high", label: "ALTA", recClass: "rec-high" };
+            if (prob >= 0.60) return { class: "medium", label: "MEDIA", recClass: "rec-medium" };
+            return { class: "low", label: "BASSA", recClass: "rec-low" };
+        }
+        
+        function renderMatches() {
+            const container = document.getElementById('daily-matches');
+            
+            if (currentMatches.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📅</div>
+                        <p>Nessuna partita caricata.</p>
+                        <p style="font-size: 0.85rem; margin-top: 10px;">
+                            Inserisci la tua chiave API-Football e clicca "Carica Partite"<br>
+                            per vedere le partite del giorno con analisi V3.1.
+                        </p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = '';
+            
+            currentMatches.forEach(match => {
+                const { prob, adjustments } = calculateProbability(match);
+                const cat = getCategory(prob);
+                
+                const card = document.createElement("div");
+                card.className = `match-card ${cat.class}`;
+                card.innerHTML = `
+                    <div class="match-header">
+                        <div>
+                            <div class="match-title">${match.flag || '⚽'} ${match.home} vs ${match.away}</div>
+                            <div class="match-time">${match.league} • ${match.time}</div>
+                        </div>
+                        <button class="toggle-btn" onclick="toggleDetails(${match.id})">
+                            Dettagli ▼
+                        </button>
+                    </div>
+                    
+                    <div class="probability-bar">
+                        <div class="probability-fill ${cat.class}" style="width: ${prob * 100}%">
+                            ${(prob * 100).toFixed(1)}%
+                        </div>
+                    </div>
+                    
+                    <span class="recommendation ${cat.recClass}">
+                        Probabilità ${cat.label} di gol nel primo tempo
+                    </span>
+                    
+                    <div class="match-details" id="details-${match.id}">
+                        ${adjustments.map(adj => `
+                            <div class="factor-row">
+                                <div class="factor-label">
+                                    <span class="factor-icon" style="background: ${adj.type === 'pos' ? 'rgba(40, 167, 69, 0.2)' : adj.type === 'neg' ? 'rgba(233, 69, 96, 0.2)' : 'rgba(160, 160, 160, 0.2)'}; color: ${adj.type === 'pos' ? '#28a745' : adj.type === 'neg' ? '#e94560' : '#a0a0a0'}">
+                                        ${adj.type === 'pos' ? '+' : adj.type === 'neg' ? '−' : '•'}
+                                    </span>
+                                    ${adj.name}
+                                </div>
+                                <div class="factor-value ${adj.type === 'pos' ? 'positive' : adj.type === 'neg' ? 'negative' : 'neutral'}">
+                                    ${adj.value}
+                                </div>
+                            </div>
+                        `).join('')}
+                        <div class="factor-row" style="border-top: 2px solid rgba(255,255,255,0.1); margin-top: 10px; padding-top: 10px;">
+                            <div class="factor-label" style="font-weight: bold;">Probabilità finale</div>
+                            <div class="factor-value" style="color: #e94560; font-size: 1.1rem;">${(prob * 100).toFixed(1)}%</div>
+                        </div>
+                        <div style="margin-top: 15px; display: flex; gap: 10px;">
+                            <button class="btn" style="font-size: 0.8rem; padding: 8px 16px;" onclick="addToArchive(${match.id})">
+                                💾 Salva in Archivio
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                container.appendChild(card);
+            });
+        }
+        
+        function toggleDetails(id) {
+            const details = document.getElementById(`details-${id}`);
+            details.classList.toggle("active");
+            const btn = details.previousElementSibling.previousElementSibling.querySelector('.toggle-btn');
+            btn.textContent = details.classList.contains("active") ? "Dettagli ▲" : "Dettagli ▼";
+        }
+        
+        async function loadMatchesFromAPI() {
+            const apiKey = document.getElementById('api-key').value.trim();
+            const dateFilter = document.getElementById('api-date').value;
+            
+            if (!apiKey) {
+                document.getElementById('api-status').innerHTML = '<span style="color: #e94560;">❌ Inserisci una chiave API valida</span>';
+                return;
+            }
+            
+            document.getElementById('api-status').innerHTML = '<div class="spinner" style="width: 20px; height: 20px; margin: 0 10px 0 0; display: inline-block; vertical-align: middle;"></div> Caricamento partite in corso...';
+            
+            try {
+                const today = new Date();
+                if (dateFilter === 'tomorrow') today.setDate(today.getDate() + 1);
+                if (dateFilter === 'yesterday') today.setDate(today.getDate() - 1);
+                const dateStr = today.toISOString().split('T')[0];
+                
+                const response = await fetch(`https://v3.football.api-sports.io/fixtures?date=${dateStr}`, {
+                    method: 'GET',
+                    headers: {
+                        'x-apisports-key': apiKey,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Errore API: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (!data.response || data.response.length === 0) {
+                    document.getElementById('api-status').innerHTML = '<span style="color: #ffc107;">⚠️ Nessuna partita trovata per questa data.</span>';
+                    return;
+                }
+                
+                currentMatches = data.response.map(fixture => {
+                    const homeTeam = fixture.teams.home;
+                    const awayTeam = fixture.teams.away;
+                    const league = fixture.league;
+                    
+                    return {
+                        id: nextId++,
+                        home: homeTeam.name,
+                        away: awayTeam.name,
+                        league: league.name + ' (' + league.country + ')',
+                        time: new Date(fixture.fixture.date).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }),
+                        flag: getFlag(league.country),
+                        homeHT: 0.70,
+                        awayHT: 0.65,
+                        xG_home: 1.0,
+                        xG_away: 0.8,
+                        cards_home: 2,
+                        cards_away: 2,
+                        style_home: "equilibrato",
+                        style_away: "equilibrato",
+                        motivation: "medium",
+                        date: dateStr,
+                        result_ht: null,
+                        result_ft: null,
+                        status: 'pending',
+                        fixture_id: fixture.fixture.id
+                    };
+                });
+                
+                localStorage.setItem('ht_predictor_next_id', nextId);
+                
+                document.getElementById('api-status').innerHTML = `<span style="color: #28a745;">✅ ${currentMatches.length} partite caricate con successo!</span>`;
+                
+                renderMatches();
+                updateSummary();
+                
+            } catch (error) {
+                console.error('Errore API:', error);
+                document.getElementById('api-status').innerHTML = `<span style="color: #e94560;">❌ Errore: ${error.message}. Verifica la chiave API e riprova.</span>`;
+            }
+        }
+        
+        function getFlag(country) {
+            const flags = {
+                'Italy': '🇮🇹', 'England': '🏴󠁧󠁢󠁥󠁮󠁧󠁿', 'Spain': '🇪🇸', 'Germany': '🇩🇪', 'France': '🇫🇷',
+                'Brazil': '🇧🇷', 'Argentina': '🇦🇷', 'Portugal': '🇵🇹', 'Netherlands': '🇳🇱', 'Belgium': '🇧🇪',
+                'Turkey': '🇹🇷', 'Greece': '🇬🇷', 'Switzerland': '🇨🇭', 'Austria': '🇦🇹', 'Scotland': '🏴󠁧󠁢󠁳󠁣󠁴󠁿',
+                'World': '🌍', 'Morocco': '🇲🇦', 'Tunisia': '🇹🇳', 'Algeria': '🇩🇿', 'Egypt': '🇪🇬'
+            };
+            return flags[country] || '⚽';
+        }
+        
+        function updateSummary() {
+            if (currentMatches.length === 0) {
+                document.getElementById('stat-total').textContent = '0';
+                document.getElementById('stat-high').textContent = '0';
+                document.getElementById('stat-medium').textContent = '0';
+                document.getElementById('stat-low').textContent = '0';
+                document.getElementById('stat-avg').textContent = '0%';
+                document.getElementById('stat-best').textContent = '-';
+                document.getElementById('top-matches').innerHTML = '<p style="color: #888; text-align: center; padding: 20px;">Nessuna partita analizzata oggi.</p>';
+                return;
+            }
+            
+            const probs = currentMatches.map(m => calculateProbability(m).prob);
+            const total = currentMatches.length;
+            const high = probs.filter(p => p >= 0.75).length;
+            const medium = probs.filter(p => p >= 0.60 && p < 0.75).length;
+            const low = probs.filter(p => p < 0.60).length;
+            const avg = probs.reduce((a, b) => a + b, 0) / total;
+            
+            const bestMatch = currentMatches.reduce((best, current) => {
+                const bestProb = calculateProbability(best).prob;
+                const currentProb = calculateProbability(current).prob;
+                return currentProb > bestProb ? current : best;
+            });
+            
+            document.getElementById('stat-total').textContent = total;
+            document.getElementById('stat-high').textContent = high;
+            document.getElementById('stat-medium').textContent = medium;
+            document.getElementById('stat-low').textContent = low;
+            document.getElementById('stat-avg').textContent = (avg * 100).toFixed(1) + '%';
+            document.getElementById('stat-best').textContent = bestMatch.home + ' vs ' + bestMatch.away;
+            
+            const sorted = [...currentMatches].sort((a, b) => {
+                return calculateProbability(b).prob - calculateProbability(a).prob;
+            }).slice(0, 3);
+            
+            document.getElementById('top-matches').innerHTML = sorted.map((m, i) => {
+                const prob = calculateProbability(m).prob;
+                const cat = getCategory(prob);
+                return `
+                    <div class="match-card ${cat.class}" style="margin-bottom: 10px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <strong>#${i + 1}</strong> ${m.home} vs ${m.away}
+                                <div style="font-size: 0.8rem; color: #888;">${m.league}</div>
+                            </div>
+                            <div style="font-size: 1.3rem; font-weight: bold; color: ${prob >= 0.75 ? '#e94560' : prob >= 0.60 ? '#ffc107' : '#28a745'};">
+                                ${(prob * 100).toFixed(1)}%
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            const chartContainer = document.getElementById('probability-chart');
+            const ranges = ['35-45%', '45-55%', '55-65%', '65-75%', '75-85%'];
+            const counts = [0, 0, 0, 0, 0];
+            probs.forEach(p => {
+                if (p < 0.45) counts[0]++;
+                else if (p < 0.55) counts[1]++;
+                else if (p < 0.65) counts[2]++;
+                else if (p < 0.75) counts[3]++;
+                else counts[4]++;
+            });
+            
+            const maxCount = Math.max(...counts);
+            chartContainer.innerHTML = ranges.map((range, i) => `
+                <div style="display: flex; align-items: center; margin-bottom: 8px;">
+                    <div style="width: 80px; font-size: 0.8rem; color: #888;">${range}</div>
+                    <div style="flex: 1; height: 20px; background: rgba(255,255,255,0.1); border-radius: 10px; overflow: hidden;">
+                        <div style="width: ${maxCount > 0 ? (counts[i] / maxCount * 100) : 0}%; height: 100%; background: ${i === 4 ? '#e94560' : i === 3 ? '#ffc107' : '#28a745'}; border-radius: 10px; transition: width 0.5s;"></div>
+                    </div>
+                    <div style="width: 30px; text-align: right; font-size: 0.8rem; font-weight: bold;">${counts[i]}</div>
+                </div>
+            `).join('');
+        }
+        
+        function addToArchive(id) {
+            const match = currentMatches.find(m => m.id === id);
+            if (!match) return;
+            
+            const archiveMatch = {
+                ...match,
+                archiveId: Date.now(),
+                savedDate: new Date().toISOString().split('T')[0]
+            };
+            
+            archive.push(archiveMatch);
+            localStorage.setItem('ht_predictor_archive', JSON.stringify(archive));
+            
+            alert('✅ Partita salvata in archivio!');
+        }
+        
+        function updateArchive() {
+            const tbody = document.getElementById('archive-body');
+            const dateFilter = document.getElementById('archive-date-filter').value;
+            const leagueFilter = document.getElementById('archive-league-filter').value;
+            
+            let filtered = archive;
+            if (dateFilter) {
+                filtered = filtered.filter(m => m.date === dateFilter || m.savedDate === dateFilter);
+            }
+            if (leagueFilter) {
+                filtered = filtered.filter(m => m.league === leagueFilter);
+            }
+            
+            const leagues = [...new Set(archive.map(m => m.league))];
+            const leagueSelect = document.getElementById('archive-league-filter');
+            leagueSelect.innerHTML = '<option value="">Tutti i campionati</option>' + 
+                leagues.map(l => `<option value="${l}">${l}</option>`).join('');
+            
+            if (filtered.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" style="text-align: center; color: #888; padding: 40px;">
+                            Nessuna partita in archivio per i filtri selezionati.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            tbody.innerHTML = filtered.map(m => {
+                const prob = calculateProbability(m).prob;
+                let statusClass = 'status-pending';
+                let statusText = '⏳ In attesa';
+                
+                if (m.result_ht) {
+                    const hasGoalHT = m.result_ht !== '0-0';
+                    const predictedGoal = prob >= 0.60;
+                    const correct = hasGoalHT === predictedGoal;
+                    statusClass = correct ? 'status-correct' : 'status-wrong';
+                    statusText = correct ? '✅ Corretto' : '❌ Errato';
+                }
+                
+                return `
+                    <tr>
+                        <td>${m.date || m.savedDate}</td>
+                        <td>${m.league}</td>
+                        <td>${m.home} vs ${m.away}</td>
+                        <td><strong>${(prob * 100).toFixed(1)}%</strong></td>
+                        <td>${m.result_ht || '-'}</td>
+                        <td>${m.result_ft || '-'}</td>
+                        <td class="${statusClass}">${statusText}</td>
+                        <td>
+                            <button class="toggle-btn" style="font-size: 0.75rem; padding: 4px 8px;" onclick="editResult(${m.archiveId || m.id})">
+                                ✏️ Risultato
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+        
+        function editResult(archiveId) {
+            const match = archive.find(m => m.archiveId === archiveId || m.id === archiveId);
+            if (!match) return;
+            
+            const ht = prompt('Inserisci risultato PRIMO TEMPO (es. 1-0 o 0-0):', match.result_ht || '');
+            if (ht === null) return;
+            
+            const ft = prompt('Inserisci risultato FINALE (es. 2-1):', match.result_ft || '');
+            if (ft === null) return;
+            
+            match.result_ht = ht;
+            match.result_ft = ft;
+            match.status = 'completed';
+            
+            localStorage.setItem('ht_predictor_archive', JSON.stringify(archive));
+            updateArchive();
+            calculateAccuracy();
+        }
+        
+        function calculateAccuracy() {
+            const completed = archive.filter(m => m.result_ht);
+            if (completed.length === 0) return;
+            
+            let correct = 0;
+            completed.forEach(m => {
+                const prob = calculateProbability(m).prob;
+                const hasGoalHT = m.result_ht !== '0-0';
+                const predictedGoal = prob >= 0.60;
+                if (hasGoalHT === predictedGoal) correct++;
+            });
+            
+            const accuracy = (correct / completed.length * 100).toFixed(1);
+            console.log(`Accuracy modello: ${accuracy}% (${correct}/${completed.length})`);
+        }
+        
+        function filterArchive() {
+            updateArchive();
+        }
+        
+        function exportArchive() {
+            if (archive.length === 0) {
+                alert('Nessuna partita da esportare!');
+                return;
+            }
+            
+            let csv = 'Data,Campionato,Partita,Probabilità HT,Risultato HT,Risultato FT,Esito\n';
+            archive.forEach(m => {
+                const prob = calculateProbability(m).prob;
+                let status = 'In attesa';
+                if (m.result_ht) {
+                    const hasGoalHT = m.result_ht !== '0-0';
+                    const predictedGoal = prob >= 0.60;
+                    status = hasGoalHT === predictedGoal ? 'Corretto' : 'Errato';
+                }
+                csv += `${m.date || m.savedDate},${m.league},${m.home} vs ${m.away},${(prob * 100).toFixed(1)}%,${m.result_ht || '-'},${m.result_ft || '-'},${status}\n`;
+            });
+            
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `ht_predictor_archive_${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            updateDate();
+            renderMatches();
+            updateSummary();
+            updateArchive();
+            
+            document.getElementById('archive-date-filter').value = new Date().toISOString().split('T')[0];
+        });
+    </script>
+</body>
+</html>
